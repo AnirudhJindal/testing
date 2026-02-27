@@ -24,7 +24,12 @@ jobs:
 
       - name: Run add-test-ids script
         id: add-ids
-        run: node scripts/add-test-ids.js
+        run: |
+          node scripts/add-test-ids.js draft2020-12
+          node scripts/add-test-ids.js draft2019-09
+          node scripts/add-test-ids.js draft7
+          node scripts/add-test-ids.js draft6
+          node scripts/add-test-ids.js draft4
 
       - uses: tj-actions/verify-changed-files@v20
         id: verify-changed-files
