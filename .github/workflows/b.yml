@@ -1,0 +1,33 @@
+name: 'Option B - Annotate Missing Test IDs'
+
+on:
+  pull_request:
+    paths:
+      - 'tests/**/*.json'
+
+jobs:
+  check-test-ids:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check test IDs and annotate
+        run: |
+          output=$(node scripts/check-test-ids.js 2>&1) || true
+          echo "$output"
+          # Print annotations for GitHub to pick up
+          while IFS= read -r line; do
+            if [[ $line == *"missing"* ]]; then
+              echo "::error::$line"
+            fi
+          done <<< "$output"
+          
+          # Fail if any issues found
+          node scripts/check-test-ids.js

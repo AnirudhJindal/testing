@@ -1,0 +1,39 @@
+name: 'Option A - Suggest Test IDs'
+
+on:
+  pull_request:
+    paths:
+      - 'tests/**/*.json'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  suggest-test-ids:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run add-test-ids script
+        id: add-ids
+        run: node scripts/add-test-ids.js
+
+      - uses: tj-actions/verify-changed-files@v20
+        id: verify-changed-files
+        if: always()
+        with:
+          fail-if-changed: 'true'
+
+      - uses: parkerbxyz/suggest-changes@v3
+        if: failure() && steps.verify-changed-files.outcome == 'failure'
+        with:
+          comment: 'Missing test IDs detected! Please accept these suggested changes to add them.'
+          event: 'REQUEST_CHANGES'
