@@ -20,14 +20,13 @@ jobs:
 
       - name: Check test IDs and annotate
         run: |
-          output=$(node scripts/check-test-ids.js 2>&1) || true
-          echo "$output"
-          # Print annotations for GitHub to pick up
-          while IFS= read -r line; do
-            if [[ $line == *"missing"* ]]; then
-              echo "::error::$line"
-            fi
-          done <<< "$output"
-          
-          # Fail if any issues found
-          node scripts/check-test-ids.js
+          EXIT_CODE=0
+          for dialect in draft2020-12 draft2019-09 draft7 draft6 draft4; do
+            output=$(node scripts/check-test-ids.js $dialect 2>&1) || EXIT_CODE=$?
+            while IFS= read -r line; do
+              if [[ $line == *"missing"* ]]; then
+                echo "::error::$line"
+              fi
+            done <<< "$output"
+          done
+          exit $EXIT_CODE

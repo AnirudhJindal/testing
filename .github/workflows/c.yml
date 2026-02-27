@@ -25,7 +25,12 @@ jobs:
         run: npm ci
 
       - name: Run add-test-ids script
-        run: node scripts/add-test-ids.js
+        run: |
+          node scripts/add-test-ids.js draft2020-12
+          node scripts/add-test-ids.js draft2019-09
+          node scripts/add-test-ids.js draft7
+          node scripts/add-test-ids.js draft6
+          node scripts/add-test-ids.js draft4
 
       - name: Commit IDs if changed
         run: |
