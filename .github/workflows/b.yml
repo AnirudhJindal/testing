@@ -21,10 +21,11 @@ jobs:
       - name: Check test IDs and annotate
         run: |
           EXIT_CODE=0
-          for dialect in draft2020-12 draft2019-09 draft7 draft6 draft4; do
-            output=$(node scripts/check-test-ids.js $dialect 2>&1) || EXIT_CODE=$?
+          for dir in tests/draft2020-12 tests/draft2019-09 tests/draft7 tests/draft6 tests/draft4; do
+            output=$(node scripts/check-test-ids.js $dir 2>&1) || EXIT_CODE=$?
+            echo "$output"
             while IFS= read -r line; do
-              if [[ $line == *"missing"* ]]; then
+              if [[ $line == *"Missing ID"* ]] || [[ $line == *"Mismatched ID"* ]]; then
                 echo "::error::$line"
               fi
             done <<< "$output"
