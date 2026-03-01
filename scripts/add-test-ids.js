@@ -5,7 +5,6 @@ import { normalize } from "./normalize.js";
 import { loadRemotes } from "./load-remotes.js";
 import generateTestId from "./utils/generateTestIds.js";
 
-
 const DIALECT_MAP = {
   "draft2020-12": "https://json-schema.org/draft/2020-12/schema",
   "draft2019-09": "https://json-schema.org/draft/2019-09/schema",
@@ -14,8 +13,7 @@ const DIALECT_MAP = {
   "draft4": "http://json-schema.org/draft-04/schema#"
 };
 
-
-
+const CI = process.env.CI === "true";
 
 async function addIdsToFile(filePath, dialectUri) {
   console.log("Reading:", filePath);
@@ -33,12 +31,7 @@ async function addIdsToFile(filePath, dialectUri) {
       const test = testCase.tests[j];
 
       if (!test.id) {
-        const id = generateTestId(
-          normalizedSchema,
-          test.data,
-          test.valid
-        );
-
+        const id = generateTestId(normalizedSchema, test.data, test.valid);
         const path = [i, "tests", j, "id"];
 
         edits.push(
@@ -57,14 +50,19 @@ async function addIdsToFile(filePath, dialectUri) {
 
   if (added > 0) {
     const updatedText = applyEdits(text, edits);
-    fs.writeFileSync(filePath, updatedText);
-    console.log(` Added ${added} IDs`);
+
+    if (CI) {
+      process.stdout.write(updatedText);
+    } else {
+      fs.writeFileSync(filePath, updatedText);
+      console.log(` Added ${added} IDs`);
+    }
   } else {
     console.log(" All tests already have IDs");
   }
 }
 
-//CLI stuff
+// CLI
 
 const dialectArg = process.argv[2];
 if (!dialectArg || !DIALECT_MAP[dialectArg]) {
@@ -76,7 +74,6 @@ if (!dialectArg || !DIALECT_MAP[dialectArg]) {
 const dialectUri = DIALECT_MAP[dialectArg];
 const filePath = process.argv[3];
 
-// Load remotes only for the specified dialect
 loadRemotes(dialectUri, "./remotes");
 
 if (filePath) {

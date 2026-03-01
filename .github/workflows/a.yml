@@ -14,9 +14,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
 
@@ -28,22 +28,37 @@ jobs:
         with:
           files: "tests/**/*.json"
 
-      - name: Generate missing test IDs
+      - name: Generate missing test IDs and post batch review
         if: steps.changed.outputs.any_changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.head.sha }}
         run: |
+          COMMENTS_JSON="[]"
+
           for file in ${{ steps.changed.outputs.all_changed_files }}; do
             dialect=$(echo "$file" | sed 's|tests/||' | cut -d'/' -f1)
-            node scripts/add-test-ids.js "$dialect" "$file"
+
+            suggested=$(node scripts/add-test-ids.js "$dialect" "$file")
+
+            if [ -n "$suggested" ]; then
+              COMMENTS_JSON=$(echo "$COMMENTS_JSON" | jq \
+                --arg path "$file" \
+                --arg body "$(printf '```suggestion\n%s\n```' "$suggested")" \
+                '. + [{"path": $path, "line": 1, "side": "RIGHT", "body": $body}]'
+              )
+            fi
           done
 
-      # 🔥 SINGLE REVIEW, ALL DIFFS
-      - name: Suggest all changes in one batch
-        uses: parkerbxyz/suggest-changes@v3
-        with:
-          comment: |
-            🚨 **Missing test IDs detected**
-
-            Click **“Add suggestion to batch”** for each file,
-            then click **“Commit all suggestions”** to fix everything
-            in a single commit.
-          event: REQUEST_CHANGES
+          if [ "$COMMENTS_JSON" != "[]" ]; then
+            gh api \
+              --method POST \
+              -H "Accept: application/vnd.github+json" \
+              "/repos/$REPO/pulls/$PR_NUMBER/reviews" \
+              -f commit_id="$SHA" \
+              -f body="🚨 **Missing test IDs detected** — click **'Add all suggestions to batch'** then **'Commit suggestions'** to fix everything in one commit." \
+              -f event="REQUEST_CHANGES" \
+              -F "comments=$COMMENTS_JSON"
+          fi
