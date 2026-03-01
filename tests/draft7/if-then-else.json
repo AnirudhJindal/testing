@@ -10,14 +10,14 @@
             {
                 "description": "valid when valid against lone if",
                 "data": 0,
-                "valid": true,
-                "id": "a34b0680ba2b2e603b1f2c93833575df"
+                "valid": true
+                
             },
             {
                 "description": "valid when invalid against lone if",
                 "data": "hello",
-                "valid": true,
-                "id": "ecb348e8f7c1005e4573ed16fac3a6c9"
+                "valid": true
+                
             }
         ]
     },
