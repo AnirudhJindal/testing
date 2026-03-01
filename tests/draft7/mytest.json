@@ -1,0 +1,20 @@
+[
+    {
+        "description": "my test",
+        "schema": {
+            "type": "string"
+        },
+        "tests": [
+            {
+                "description": "a string is valid",
+                "data": "foo",
+                "valid": true
+            },
+            {
+                "description": "an integer is invalid",
+                "data": 1,
+                "valid": false
+            }
+        ]
+    }
+]
