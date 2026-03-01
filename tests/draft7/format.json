@@ -6,14 +6,14 @@
             {
                 "description": "all string formats ignore integers",
                 "data": 12,
-                "valid": true,
-                "id": "3c4ecf33a68067391ac37f25fab2a7c6"
+                "valid": true
+                
             },
             {
                 "description": "all string formats ignore floats",
                 "data": 13.7,
-                "valid": true,
-                "id": "9e9231f97cca814f45396f614a015f8b"
+                "valid": true
+                
             },
             {
                 "description": "all string formats ignore objects",
