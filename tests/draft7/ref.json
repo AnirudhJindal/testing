@@ -11,8 +11,8 @@
             {
                 "description": "match",
                 "data": {"foo": false},
-                "valid": true,
-                "id": "2709607549a158a4590a022b6129cf30"
+                "valid": true
+                
             },
             {
                 "description": "recursive match",
