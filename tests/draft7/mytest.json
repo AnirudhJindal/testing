@@ -8,7 +8,8 @@
             {
                 "description": "a string is valid",
                 "data": "foo",
-                "valid": true
+                "valid": true,
+                "id": "d9ec72b98a90958880901784739d3da6"
             },
             {
                 "description": "an integer is invalid",
