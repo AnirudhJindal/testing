@@ -1,9 +1,9 @@
-name: 'Option A - Suggest Test IDs'
+name: Suggest missing test IDs
 
 on:
   pull_request:
     paths:
-      - 'tests/**/*.json'
+      - "tests/**/*.json"
 
 permissions:
   contents: read
@@ -12,33 +12,41 @@ permissions:
 jobs:
   suggest-test-ids:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v3
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: "18"
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Run add-test-ids script
-        id: add-ids
+      - name: Get changed test files
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: "tests/**/*.json"
+
+      - name: Add missing test IDs
+        if: steps.changed-files.outputs.any_changed == 'true'
         run: |
-          node scripts/add-test-ids.js draft2020-12
-          node scripts/add-test-ids.js draft2019-09
-          node scripts/add-test-ids.js draft7
-          node scripts/add-test-ids.js draft6
-          node scripts/add-test-ids.js draft4
+          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            echo "Processing $file"
+            dialect=$(echo "$file" | sed 's|tests/||' | cut -d'/' -f1)
+            node scripts/add-test-ids.js "$dialect" "$file"
+          done
 
-      - uses: tj-actions/verify-changed-files@v20
-        id: verify-changed-files
-        if: always()
+      # 🔥 THIS STEP CREATES THE "APPLY SUGGESTION" BUTTON
+      - name: Suggest changes on PR
+        uses: parkerbxyz/suggest-changes@v3
         with:
-          fail-if-changed: 'true'
+          comment: |
+            🚨 **Missing test IDs detected**
 
-      - uses: parkerbxyz/suggest-changes@v3
-        if: failure() && steps.verify-changed-files.outcome == 'failure'
-        with:
-          comment: 'Missing test IDs detected! Please accept these suggested changes to add them.'
-          event: 'REQUEST_CHANGES'
+            Click **“Apply suggestion”** or **“Apply all suggestions”**
+            to automatically commit the generated test IDs.
+          event: REQUEST_CHANGES
