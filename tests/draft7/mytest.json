@@ -1,0 +1,22 @@
+[
+    {
+        "description": "my test",
+        "schema": {
+            "type": "string"
+        },
+        "tests": [
+            {
+                "description": "a string is valid",
+                "data": "foo",
+                "valid": true,
+                "id": "d9ec72b98a90958880901784739d3da6"
+            },
+            {
+                "description": "an integer is invalid",
+                "data": 1,
+                "valid": false,
+                "id": "35d39b9c0d5423ea190377d14e924e50"
+            }
+        ]
+    }
+]

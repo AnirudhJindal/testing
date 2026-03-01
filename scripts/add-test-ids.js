@@ -13,10 +13,8 @@ const DIALECT_MAP = {
   "draft4": "http://json-schema.org/draft-04/schema#"
 };
 
-const CI = process.env.CI === "true";
-
 async function addIdsToFile(filePath, dialectUri) {
-  if (!CI) console.log("Reading:", filePath);
+  console.log("Reading:", filePath);
 
   const text = fs.readFileSync(filePath, "utf8");
   const tests = parse(text);
@@ -50,19 +48,12 @@ async function addIdsToFile(filePath, dialectUri) {
 
   if (added > 0) {
     const updatedText = applyEdits(text, edits);
-
-    if (CI) {
-      process.stdout.write(updatedText);
-    } else {
-      fs.writeFileSync(filePath, updatedText);
-      console.log(` Added ${added} IDs`);
-    }
+    fs.writeFileSync(filePath, updatedText);
+    console.log(` Added ${added} IDs`);
   } else {
-    if (!CI) console.log(" All tests already have IDs");
+    console.log(" All tests already have IDs");
   }
 }
-
-// CLI
 
 const dialectArg = process.argv[2];
 if (!dialectArg || !DIALECT_MAP[dialectArg]) {
