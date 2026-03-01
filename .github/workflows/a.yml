@@ -44,10 +44,14 @@ jobs:
             suggested=$(node scripts/add-test-ids.js "$dialect" "$file")
 
             if [ -n "$suggested" ]; then
+              last_line=$(wc -l < "$file")
+
               COMMENTS_JSON=$(echo "$COMMENTS_JSON" | jq \
                 --arg path "$file" \
+                --argjson start_line 1 \
+                --argjson line "$last_line" \
                 --arg body "$(printf '```suggestion\n%s\n```' "$suggested")" \
-                '. + [{"path": $path, "line": 1, "side": "RIGHT", "body": $body}]'
+                '. + [{"path": $path, "start_line": $start_line, "line": $line, "side": "RIGHT", "start_side": "RIGHT", "body": $body}]'
               )
             fi
           done
