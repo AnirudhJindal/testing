@@ -15,14 +15,14 @@
             {
                 "description": "first anyOf valid",
                 "data": 1,
-                "valid": true,
-                "id": "9272b5062b7454c3eebd9076dd8e8738"
+                "valid": true
+                
             },
             {
                 "description": "second anyOf valid",
                 "data": 2.5,
-                "valid": true,
-                "id": "f3d5e9c2bd98dc3e167a882a3af9eae7"
+                "valid": true
+                
             },
             {
                 "description": "both anyOf valid",
