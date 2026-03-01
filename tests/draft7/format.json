@@ -13,7 +13,8 @@
             {
                 "description": "all string formats ignore floats",
                 "data": 13.7,
-                "valid": true
+                "valid": true,
+                "id": "9e9231f97cca814f45396f614a015f8b"
                 
             },
             {
