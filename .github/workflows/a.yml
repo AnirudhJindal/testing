@@ -53,12 +53,14 @@ jobs:
           done
 
           if [ "$COMMENTS_JSON" != "[]" ]; then
-            gh api \
-              --method POST \
-              -H "Accept: application/vnd.github+json" \
-              "/repos/$REPO/pulls/$PR_NUMBER/reviews" \
-              -f commit_id="$SHA" \
-              -f body="🚨 **Missing test IDs detected** — click **'Add all suggestions to batch'** then **'Commit suggestions'** to fix everything in one commit." \
-              -f event="REQUEST_CHANGES" \
-              -F "comments=$COMMENTS_JSON"
+            jq -n \
+              --arg sha "$SHA" \
+              --arg body "🚨 **Missing test IDs detected** — click **'Add all suggestions to batch'** then **'Commit suggestions'** to fix everything in one commit." \
+              --argjson comments "$COMMENTS_JSON" \
+              '{commit_id: $sha, body: $body, event: "REQUEST_CHANGES", comments: $comments}' \
+            | gh api \
+                --method POST \
+                -H "Accept: application/vnd.github+json" \
+                "/repos/$REPO/pulls/$PR_NUMBER/reviews" \
+                --input -
           fi

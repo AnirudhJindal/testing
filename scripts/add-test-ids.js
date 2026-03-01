@@ -16,7 +16,7 @@ const DIALECT_MAP = {
 const CI = process.env.CI === "true";
 
 async function addIdsToFile(filePath, dialectUri) {
-  console.log("Reading:", filePath);
+  if (!CI) console.log("Reading:", filePath);
 
   const text = fs.readFileSync(filePath, "utf8");
   const tests = parse(text);
@@ -58,7 +58,7 @@ async function addIdsToFile(filePath, dialectUri) {
       console.log(` Added ${added} IDs`);
     }
   } else {
-    console.log(" All tests already have IDs");
+    if (!CI) console.log(" All tests already have IDs");
   }
 }
 
