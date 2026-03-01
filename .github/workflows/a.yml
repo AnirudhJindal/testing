@@ -14,39 +14,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v5
 
-      - name: Setup Node
-        uses: actions/setup-node@v3
+      - uses: actions/setup-node@v3
         with:
-          node-version: "18"
+          node-version: 18
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
 
       - name: Get changed test files
-        id: changed-files
+        id: changed
         uses: tj-actions/changed-files@v45
         with:
           files: "tests/**/*.json"
 
-      - name: Add missing test IDs
-        if: steps.changed-files.outputs.any_changed == 'true'
+      - name: Generate missing test IDs
+        if: steps.changed.outputs.any_changed == 'true'
         run: |
-          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
-            echo "Processing $file"
+          for file in ${{ steps.changed.outputs.all_changed_files }}; do
             dialect=$(echo "$file" | sed 's|tests/||' | cut -d'/' -f1)
             node scripts/add-test-ids.js "$dialect" "$file"
           done
 
-      # 🔥 THIS STEP CREATES THE "APPLY SUGGESTION" BUTTON
-      - name: Suggest changes on PR
+      # 🔥 SINGLE REVIEW, ALL DIFFS
+      - name: Suggest all changes in one batch
         uses: parkerbxyz/suggest-changes@v3
         with:
           comment: |
             🚨 **Missing test IDs detected**
 
-            Click **“Apply suggestion”** or **“Apply all suggestions”**
-            to automatically commit the generated test IDs.
+            Click **“Add suggestion to batch”** for each file,
+            then click **“Commit all suggestions”** to fix everything
+            in a single commit.
           event: REQUEST_CHANGES
