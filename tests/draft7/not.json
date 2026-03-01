@@ -14,8 +14,8 @@
             {
                 "description": "disallowed",
                 "data": 1,
-                "valid": false,
-                "id": "62125eff8a05989652bec7f622f129ab"
+                "valid": false
+                
             }
         ]
     },
@@ -28,8 +28,8 @@
             {
                 "description": "valid",
                 "data": "foo",
-                "valid": true,
-                "id": "ecb6734e7b99adebe6284cb79ac78e2a"
+                "valid": true
+                
             },
             {
                 "description": "mismatch",
