@@ -1,4 +1,4 @@
-name: Suggest missing test IDs
+name: Add missing test IDs
 
 on:
   pull_request:
@@ -6,15 +6,18 @@ on:
       - "tests/**/*.json"
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 jobs:
-  suggest-test-ids:
+  add-test-ids:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-node@v4
         with:
@@ -28,43 +31,18 @@ jobs:
         with:
           files: "tests/**/*.json"
 
-      - name: Generate missing test IDs and post batch review
+      - name: Add missing test IDs
         if: steps.changed.outputs.any_changed == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REPO: ${{ github.repository }}
-          SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          COMMENTS_JSON="[]"
-
           for file in ${{ steps.changed.outputs.all_changed_files }}; do
             dialect=$(echo "$file" | sed 's|tests/||' | cut -d'/' -f1)
-
-            suggested=$(node scripts/add-test-ids.js "$dialect" "$file")
-
-            if [ -n "$suggested" ]; then
-              last_line=$(wc -l < "$file")
-
-              COMMENTS_JSON=$(echo "$COMMENTS_JSON" | jq \
-                --arg path "$file" \
-                --argjson start_line 1 \
-                --argjson line "$last_line" \
-                --arg body "$(printf '```suggestion\n%s\n```' "$suggested")" \
-                '. + [{"path": $path, "start_line": $start_line, "line": $line, "side": "RIGHT", "start_side": "RIGHT", "body": $body}]'
-              )
-            fi
+            node scripts/add-test-ids.js "$dialect" "$file"
           done
 
-          if [ "$COMMENTS_JSON" != "[]" ]; then
-            jq -n \
-              --arg sha "$SHA" \
-              --arg body "🚨 **Missing test IDs detected** — click **'Add all suggestions to batch'** then **'Commit suggestions'** to fix everything in one commit." \
-              --argjson comments "$COMMENTS_JSON" \
-              '{commit_id: $sha, body: $body, event: "REQUEST_CHANGES", comments: $comments}' \
-            | gh api \
-                --method POST \
-                -H "Accept: application/vnd.github+json" \
-                "/repos/$REPO/pulls/$PR_NUMBER/reviews" \
-                --input -
-          fi
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "chore: add missing test IDs"
+          git push
