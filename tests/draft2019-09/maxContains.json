@@ -9,8 +9,7 @@
             {
                 "description": "one item valid against lone maxContains",
                 "data": [ 1 ],
-                "valid": true,
-                "id": "d3f0e734f81ae8ed8c7bfa96680cc26e"
+                "valid": true
             },
             {
                 "description": "two items still valid against lone maxContains",
