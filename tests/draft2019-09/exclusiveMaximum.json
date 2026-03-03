@@ -9,14 +9,14 @@
             {
                 "description": "below the exclusiveMaximum is valid",
                 "data": 2.2,
-                "valid": true,
-                "id": "0e812aa14d3f06ffa3159f6a87a24824"
+                "valid": true
+                
             },
             {
                 "description": "boundary point is invalid",
                 "data": 3.0,
-                "valid": false,
-                "id": "8ee25b3a2916960a2219726ad7c836e2"
+                "valid": false
+                
             },
             {
                 "description": "above the exclusiveMaximum is invalid",
