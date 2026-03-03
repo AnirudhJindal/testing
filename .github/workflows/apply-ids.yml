@@ -1,0 +1,45 @@
+name: Apply missing test IDs
+
+on:
+  workflow_run:
+    workflows: ["Check test IDs"]
+    types:
+      - completed
+
+jobs:
+  apply-ids:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Download patch artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: missing-ids-patch
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Check if patch has changes
+        id: check
+        run: |
+          if [ -f missing-ids.patch ] && [ -s missing-ids.patch ]; then
+            echo "HAS_PATCH=true" >> $GITHUB_ENV
+            echo "PR_NUMBER=$(cat pr-number.txt)" >> $GITHUB_ENV
+          fi
+
+      - name: Checkout PR branch
+        if: env.HAS_PATCH == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ env.PR_NUMBER }}/head
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Apply patch and push
+        if: env.HAS_PATCH == 'true'
+        run: |
+          git apply missing-ids.patch
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "chore: add missing test IDs"
+          git push

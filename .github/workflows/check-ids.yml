@@ -1,0 +1,44 @@
+name: Check test IDs
+
+on:
+  pull_request:
+    paths:
+      - "tests/**/*.json"
+
+jobs:
+  check-ids:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - run: npm ci
+
+      - name: Get changed test files
+        id: changed
+        uses: tj-actions/changed-files@v45
+        with:
+          files: "tests/**/*.json"
+
+      - name: Add missing IDs and save patch
+        if: steps.changed.outputs.any_changed == 'true'
+        run: |
+          for file in ${{ steps.changed.outputs.all_changed_files }}; do
+            dialect=$(echo "$file" | sed 's|tests/||' | cut -d'/' -f1)
+            node scripts/add-test-ids.js "$dialect" "$file"
+          done
+          git diff > missing-ids.patch
+          echo ${{ github.event.pull_request.number }} > pr-number.txt
+
+      - name: Upload artifacts
+        if: steps.changed.outputs.any_changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: missing-ids-patch
+          path: |
+            missing-ids.patch
+            pr-number.txt
