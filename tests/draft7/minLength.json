@@ -12,14 +12,14 @@
             {
                 "description": "exact length is valid",
                 "data": "fo",
-                "valid": true,
-                "id": "ee10a0e65bce3a1dff13b6f17d1fe041"
+                "valid": true
+                
             },
             {
                 "description": "too short is invalid",
                 "data": "f",
-                "valid": false,
-                "id": "40ca10511830964484e5adcb208ecdd0"
+                "valid": false
+               
             },
             {
                 "description": "ignores non-strings",
