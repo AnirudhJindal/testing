@@ -1,57 +1,63 @@
-name: Apply missing test IDs (auto)
+name: apply-test-ids
 
 on:
   pull_request_target:
-    paths:
-      - "tests/**/*.json"
+    types: [opened, synchronize]
 
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
-  apply-test-ids:
+  apply:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout BASE repo (trusted code)
-      - name: Checkout base repo
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.base.ref }}
-
-      # 2️⃣ Save trusted script
-      - name: Copy trusted fixer script
-        run: |
-          mkdir -p /tmp/trusted
-          cp scripts/add-test-ids.js /tmp/trusted/
-
-      # 3️⃣ Checkout PR code (UNTRUSTED)
+      # 1️⃣ Checkout PR files (THIS WAS THE MISSING PART)
       - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
 
-      # 4️⃣ Apply fixes using TRUSTED script
+      # 2️⃣ Debug (optional but recommended once)
+      - name: Debug SHAs
+        run: |
+          echo "BASE SHA: ${{ github.event.pull_request.base.sha }}"
+          echo "HEAD SHA: ${{ github.event.pull_request.head.sha }}"
+          git log -1 --oneline
+
+      # 3️⃣ Setup Node
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      # 4️⃣ Install deps (only if needed)
+      - run: npm ci
+        if: hashFiles('package-lock.json') != ''
+
+      # 5️⃣ Fetch list of files changed in PR
+      - name: Get PR changed files
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -s \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "${{ github.event.pull_request.url }}/files" \
+            > pr-files.json
+
+      # 6️⃣ Run TRUSTED base-branch script on PR files
       - name: Apply missing test IDs
         run: |
-          for file in $(git diff --name-only origin/${{ github.event.pull_request.base.ref }} | grep '^tests/.*\.json'); do
-            dialect=$(echo "$file" | sed 's|tests/||' | cut -d'/' -f1)
-            node /tmp/trusted/add-test-ids.js "$dialect" "$file"
-          done
+          node scripts/add-missing-test-ids.js pr-files.json
 
-      # 5️⃣ Commit & push if changed
-      - name: Commit and push
+      # 7️⃣ Commit back to PR branch
+      - name: Commit and push changes
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "test-id-bot"
+          git config user.email "test-id-bot@users.noreply.github.com"
 
-          git add -A
-
-          if git diff --cached --quiet; then
-            echo "No changes needed"
-          else
-            git commit -m "chore: add missing test IDs"
-            git push
-          fi
+          git status
+          git add .
+          git commit -m "chore: auto-add missing test IDs" || echo "No changes to commit"
+          git push
