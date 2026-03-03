@@ -1,45 +1,57 @@
-name: Apply missing test IDs
+name: Apply missing test IDs (auto)
 
 on:
-  workflow_run:
-    workflows: ["Check test IDs"]
-    types:
-      - completed
+  pull_request_target:
+    paths:
+      - "tests/**/*.json"
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
-  apply-ids:
+  apply-test-ids:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
-      - name: Download patch artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: missing-ids-patch
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ github.event.workflow_run.id }}
-
-      - name: Check if patch has changes
-        id: check
-        run: |
-          if [ -f missing-ids.patch ] && [ -s missing-ids.patch ]; then
-            echo "HAS_PATCH=true" >> $GITHUB_ENV
-            echo "PR_NUMBER=$(cat pr-number.txt)" >> $GITHUB_ENV
-          fi
-
-      - name: Checkout PR branch
-        if: env.HAS_PATCH == 'true'
+      # 1️⃣ Checkout BASE repo (trusted code)
+      - name: Checkout base repo
         uses: actions/checkout@v4
         with:
-          ref: refs/pull/${{ env.PR_NUMBER }}/head
-          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.event.pull_request.base.ref }}
 
-      - name: Apply patch and push
-        if: env.HAS_PATCH == 'true'
+      # 2️⃣ Save trusted script
+      - name: Copy trusted fixer script
         run: |
-          git apply missing-ids.patch
+          mkdir -p /tmp/trusted
+          cp scripts/add-test-ids.js /tmp/trusted/
+
+      # 3️⃣ Checkout PR code (UNTRUSTED)
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      # 4️⃣ Apply fixes using TRUSTED script
+      - name: Apply missing test IDs
+        run: |
+          for file in $(git diff --name-only origin/${{ github.event.pull_request.base.ref }} | grep '^tests/.*\.json'); do
+            dialect=$(echo "$file" | sed 's|tests/||' | cut -d'/' -f1)
+            node /tmp/trusted/add-test-ids.js "$dialect" "$file"
+          done
+
+      # 5️⃣ Commit & push if changed
+      - name: Commit and push
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
           git add -A
-          git diff --cached --quiet || git commit -m "chore: add missing test IDs"
-          git push
+
+          if git diff --cached --quiet; then
+            echo "No changes needed"
+          else
+            git commit -m "chore: add missing test IDs"
+            git push
+          fi
