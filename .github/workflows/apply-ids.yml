@@ -13,30 +13,48 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout PR files (THIS WAS THE MISSING PART)
+      # --------------------------------------------------
+      # 1️⃣ Checkout BASE branch (trusted code)
+      # --------------------------------------------------
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          fetch-depth: 0
+
+      # --------------------------------------------------
+      # 2️⃣ Save trusted base script (VERY IMPORTANT)
+      # --------------------------------------------------
+      - name: Save base automation script
+        run: |
+          mkdir -p /tmp/base-scripts
+          cp scripts/utils/add-test-ids.js /tmp/base-scripts/add-test-ids.js
+
+      # --------------------------------------------------
+      # 3️⃣ Checkout PR branch (files to be modified)
+      # --------------------------------------------------
       - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
-      # 2️⃣ Debug (optional but recommended once)
-      - name: Debug SHAs
-        run: |
-          echo "BASE SHA: ${{ github.event.pull_request.base.sha }}"
-          echo "HEAD SHA: ${{ github.event.pull_request.head.sha }}"
-          git log -1 --oneline
-
-      # 3️⃣ Setup Node
+      # --------------------------------------------------
+      # 4️⃣ Setup Node.js
+      # --------------------------------------------------
       - uses: actions/setup-node@v3
         with:
           node-version: 18
 
-      # 4️⃣ Install deps (only if needed)
+      # --------------------------------------------------
+      # 5️⃣ Install dependencies (if needed)
+      # --------------------------------------------------
       - run: npm ci
         if: hashFiles('package-lock.json') != ''
 
-      # 5️⃣ Fetch list of files changed in PR
+      # --------------------------------------------------
+      # 6️⃣ Fetch list of files changed in PR
+      # --------------------------------------------------
       - name: Get PR changed files
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -46,12 +64,16 @@ jobs:
             "${{ github.event.pull_request.url }}/files" \
             > pr-files.json
 
-      # 6️⃣ Run TRUSTED base-branch script on PR files
+      # --------------------------------------------------
+      # 7️⃣ Run TRUSTED base script on PR files
+      # --------------------------------------------------
       - name: Apply missing test IDs
         run: |
-          node scripts/add-missing-test-ids.js pr-files.json
+          node /tmp/base-scripts/add-test-ids.js pr-files.json
 
-      # 7️⃣ Commit back to PR branch
+      # --------------------------------------------------
+      # 8️⃣ Commit & push back to PR branch
+      # --------------------------------------------------
       - name: Commit and push changes
         run: |
           git config user.name "test-id-bot"
