@@ -26,8 +26,7 @@
             {
                 "description": "ignores non-numbers",
                 "data": "x",
-                "valid": true,
-                "id": "f86a73bee925f06e9d0efd317928dea7"
+                "valid": true
             }
         ]
     }
