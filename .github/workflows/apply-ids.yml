@@ -100,6 +100,8 @@ jobs:
       #    CLI: node add-test-ids.js <dialect> [file-path]
       # --------------------------------------------------
       - name: Apply missing test IDs
+        env:
+          CI: "false"   # force script to write files instead of printing to stdout
         run: |
           if [ ! -s affected-drafts.txt ]; then
             echo "No test JSON files changed — nothing to do."
