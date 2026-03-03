@@ -6,8 +6,7 @@
             {
                 "description": "longer is valid",
                 "data": "foo",
-                "valid": true,
-                "id": "e93429b67cb4347e3986d1a3a89921a4"
+                "valid": true
             },
             {
                 "description": "exact length is valid",
@@ -30,8 +29,8 @@
             {
                 "description": "one grapheme is not long enough",
                 "data": "\uD83D\uDCA9",
-                "valid": false,
-                "id": "faa7b66b87d619b6aedaf7a1f922530e"
+                "valid": false
+               
             }
         ]
     },
