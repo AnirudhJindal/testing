@@ -6,14 +6,12 @@
             {
                 "description": "longer is valid",
                 "data": "foo",
-                "valid": true,
-                "id": "e93429b67cb4347e3986d1a3a89921a4"
+                "valid": true
             },
             {
                 "description": "exact length is valid",
                 "data": "fo",
-                "valid": true,
-                "id": "ee10a0e65bce3a1dff13b6f17d1fe041"
+                "valid": true
             },
             {
                 "description": "too short is invalid",
