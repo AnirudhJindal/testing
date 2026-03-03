@@ -1,0 +1,13 @@
+[
+  {
+    "description": "my test case",
+    "schema": { "type": "string" },
+    "tests": [
+      {
+        "description": "valid string",
+        "data": "hello",
+        "valid": true
+      }
+    ]
+  }
+]
