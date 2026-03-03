@@ -21,8 +21,7 @@
             {
                 "description": "above the exclusiveMaximum is invalid",
                 "data": 3.5,
-                "valid": false,
-                "id": "87c81d85638d7347bfa4a4b749a913c1"
+                "valid": false
             },
             {
                 "description": "ignores non-numbers",
