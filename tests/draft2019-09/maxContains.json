@@ -9,12 +9,14 @@
             {
                 "description": "one item valid against lone maxContains",
                 "data": [ 1 ],
-                "valid": true
+                "valid": true,
+                "id": "d3f0e734f81ae8ed8c7bfa96680cc26e"
             },
             {
                 "description": "two items still valid against lone maxContains",
                 "data": [ 1, 2 ],
-                "valid": true
+                "valid": true,
+                "id": "b41fe7cd3a8a1a378c0523399b616951"
                 
             }
         ]
@@ -30,7 +32,8 @@
             {
                 "description": "empty data",
                 "data": [ ],
-                "valid": false
+                "valid": false,
+                "id": "c9da98440189838726bb29e17985d597"
                 
             },
             {
