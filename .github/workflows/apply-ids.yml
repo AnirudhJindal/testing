@@ -111,7 +111,7 @@ jobs:
             while IFS= read -r file; do
               COUNT=$(git diff --cached -- "$file" | grep "^+" | grep '"id":' | wc -l | tr -d " ")
               if [ "$COUNT" -gt 0 ]; then
-                SUMMARY="${SUMMARY}\n- `${file}` - **${COUNT}** ID(s) added"
+                SUMMARY="${SUMMARY}\n- \`${file}\` - **${COUNT}** ID(s) added"
                 TOTAL=$((TOTAL + COUNT))
               fi
             done < <(git diff --cached --name-only)
