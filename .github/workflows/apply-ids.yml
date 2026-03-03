@@ -28,7 +28,7 @@ jobs:
       - name: Save base automation script
         run: |
           mkdir -p /tmp/base-scripts
-          cp scripts/utils/add-test-ids.js /tmp/base-scripts/add-test-ids.js
+          cp scripts/add-test-ids.js /tmp/base-scripts/add-test-ids.js
 
       # --------------------------------------------------
       # 3️⃣ Checkout PR branch (files to be modified)
