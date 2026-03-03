@@ -10,14 +10,14 @@
             {
                 "description": "additional items match schema",
                 "data": [ null, 2, 3, 4 ],
-                "valid": true,
-                "id": "f36fbf6987e1c5b4a7ce7c5565733cc3"
+                "valid": true
+                
             },
             {
                 "description": "additional items do not match schema",
                 "data": [ null, 2, 3, "foo" ],
-                "valid": false,
-                "id": "055003328a11c33cd2ee07e212d797fc"
+                "valid": false
+                
             }
         ]
     },
