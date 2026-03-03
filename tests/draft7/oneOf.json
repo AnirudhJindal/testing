@@ -15,13 +15,15 @@
             {
                 "description": "first oneOf valid",
                 "data": 1,
-                "valid": true
+                "valid": true,
+                "id": "daca71219ff361b42f170b4beead47f1"
                
             },
             {
                 "description": "second oneOf valid",
                 "data": 2.5,
-                "valid": true
+                "valid": true,
+                "id": "6e76f81762053707703cc597e981591c"
             },
             {
                 "description": "both oneOf valid",
