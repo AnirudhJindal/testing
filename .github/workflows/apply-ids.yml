@@ -13,18 +13,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # --------------------------------------------------
-      # 1. Checkout BASE branch (trusted code only)
-      # --------------------------------------------------
       - name: Checkout base branch
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.base.ref }}
           fetch-depth: 0
 
-      # --------------------------------------------------
-      # 2. Save trusted scripts from base branch
-      # --------------------------------------------------
       - name: Save base automation scripts
         run: |
           mkdir -p /tmp/base-scripts/scripts/utils
@@ -34,19 +28,12 @@ jobs:
           cp scripts/utils/generateTestIds.js  /tmp/base-scripts/scripts/utils/generateTestIds.js
           cp scripts/utils/jsonfiles.js        /tmp/base-scripts/scripts/utils/jsonfiles.js
 
-      # --------------------------------------------------
-      # 3. Checkout PR branch (the files we want to modify)
-      # --------------------------------------------------
       - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
-      # --------------------------------------------------
-      # 4. Restore trusted scripts over PR code
-      #    (prevents malicious script injection from PRs)
-      # --------------------------------------------------
       - name: Restore trusted scripts
         run: |
           cp /tmp/base-scripts/scripts/add-test-ids.js          scripts/add-test-ids.js
@@ -55,23 +42,14 @@ jobs:
           cp /tmp/base-scripts/scripts/utils/generateTestIds.js scripts/utils/generateTestIds.js
           cp /tmp/base-scripts/scripts/utils/jsonfiles.js       scripts/utils/jsonfiles.js
 
-      # --------------------------------------------------
-      # 5. Setup Node.js
-      # --------------------------------------------------
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      # --------------------------------------------------
-      # 6. Install dependencies
-      # --------------------------------------------------
       - name: Install dependencies
         run: npm ci
 
-      # --------------------------------------------------
-      # 7. Fetch changed files from the PR
-      # --------------------------------------------------
       - name: Get changed test files
         id: changed
         env:
@@ -83,25 +61,18 @@ jobs:
             | jq -r '.[].filename' \
             > changed-files.txt
 
-          echo "Changed files:"
           cat changed-files.txt
 
-          # Extract which draft folders are affected (e.g. draft7, draft2020-12)
           grep -E '^tests/(draft[^/]+)/.*\.json$' changed-files.txt \
             | sed -E 's|^tests/([^/]+)/.*|\1|' \
             | sort -u \
             > affected-drafts.txt
 
-          echo "Affected drafts:"
           cat affected-drafts.txt
 
-      # --------------------------------------------------
-      # 8. Run add-test-ids.js per affected dialect + file
-      #    CLI: node add-test-ids.js <dialect> [file-path]
-      # --------------------------------------------------
       - name: Apply missing test IDs
         env:
-          CI: "false"   # force script to write files instead of printing to stdout
+          CI: "false"
         run: |
           if [ ! -s affected-drafts.txt ]; then
             echo "No test JSON files changed — nothing to do."
@@ -110,18 +81,14 @@ jobs:
 
           while IFS= read -r draft; do
             echo "Processing dialect: $draft"
-            grep -E "^tests/${draft}/.*\.json$" changed-files.txt | while IFS= read -r file; do
+            grep -E "^tests/${draft}/.*\\.json$" changed-files.txt | while IFS= read -r file; do
               if [ -f "$file" ]; then
-                echo "  → $file"
+                echo "  -> $file"
                 node scripts/add-test-ids.js "$draft" "$file"
               fi
             done
           done < affected-drafts.txt
 
-      # --------------------------------------------------
-      # 9. Commit and push back to the PR branch
-      #    Uses repo token to push to fork via refs/heads/
-      # --------------------------------------------------
       - name: Commit and push changes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -132,14 +99,42 @@ jobs:
           git add 'tests/**/*.json'
 
           if git diff --cached --quiet; then
-            echo "✅ No test ID changes needed — nothing to commit."
+            echo "No test ID changes needed — nothing to commit."
+            echo "CHANGES_MADE=false" >> $GITHUB_ENV
           else
+            SUMMARY=""
+            TOTAL=0
+            while IFS= read -r file; do
+              COUNT=$(git diff --cached -- "$file" | grep '^+' | grep '"id":' | wc -l | tr -d ' ')
+              if [ "$COUNT" -gt 0 ]; then
+                SUMMARY="${SUMMARY}\n- \`${file}\` — **${COUNT}** ID(s) added"
+                TOTAL=$((TOTAL + COUNT))
+              fi
+            done < <(git diff --cached --name-only)
+
+            printf "%b" "$SUMMARY" > /tmp/summary.txt
+            echo "TOTAL_IDS=${TOTAL}" >> $GITHUB_ENV
+
             git commit -m "chore: auto-add missing test IDs"
 
-            # Push to the fork's branch using the fork repo URL
             git push \
               https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.event.pull_request.head.repo.full_name }}.git \
               HEAD:refs/heads/${{ github.event.pull_request.head.ref }}
 
-            echo "✅ Pushed test ID updates to PR branch."
+            echo "CHANGES_MADE=true" >> $GITHUB_ENV
+            echo "Pushed test ID updates to PR branch."
           fi
+
+      - name: Post PR comment
+        if: env.CHANGES_MADE == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SUMMARY=$(cat /tmp/summary.txt)
+          BODY="### Robot test-id-bot added ${TOTAL_IDS} missing test ID(s)\n\n${SUMMARY}\n\n> IDs are deterministic hashes based on the schema, test data, and expected result."
+
+          curl -s -X POST \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Content-Type: application/json" \
+            "${{ github.event.pull_request.comments_url }}" \
+            --data "$(jq -n --arg body "$(printf '%b' "$BODY")" '{body: $body}')"
