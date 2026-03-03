@@ -14,7 +14,7 @@ jobs:
 
     steps:
       # --------------------------------------------------
-      # 1️⃣ Checkout BASE branch (trusted code)
+      # 1. Checkout BASE branch (trusted code only)
       # --------------------------------------------------
       - name: Checkout base branch
         uses: actions/checkout@v4
@@ -23,15 +23,19 @@ jobs:
           fetch-depth: 0
 
       # --------------------------------------------------
-      # 2️⃣ Save trusted base script (VERY IMPORTANT)
+      # 2. Save trusted scripts from base branch
       # --------------------------------------------------
-      - name: Save base automation script
+      - name: Save base automation scripts
         run: |
-          mkdir -p /tmp/base-scripts
-          cp scripts/add-test-ids.js /tmp/base-scripts/add-test-ids.js
+          mkdir -p /tmp/base-scripts/scripts/utils
+          cp scripts/add-test-ids.js           /tmp/base-scripts/scripts/add-test-ids.js
+          cp scripts/normalize.js              /tmp/base-scripts/scripts/normalize.js
+          cp scripts/load-remotes.js           /tmp/base-scripts/scripts/load-remotes.js
+          cp scripts/utils/generateTestIds.js  /tmp/base-scripts/scripts/utils/generateTestIds.js
+          cp scripts/utils/jsonfiles.js        /tmp/base-scripts/scripts/utils/jsonfiles.js
 
       # --------------------------------------------------
-      # 3️⃣ Checkout PR branch (files to be modified)
+      # 3. Checkout PR branch (the files we want to modify)
       # --------------------------------------------------
       - name: Checkout PR branch
         uses: actions/checkout@v4
@@ -40,46 +44,92 @@ jobs:
           fetch-depth: 0
 
       # --------------------------------------------------
-      # 4️⃣ Setup Node.js
+      # 4. Restore trusted scripts over PR code
+      #    (prevents malicious script injection from PRs)
       # --------------------------------------------------
-      - uses: actions/setup-node@v3
+      - name: Restore trusted scripts
+        run: |
+          cp /tmp/base-scripts/scripts/add-test-ids.js          scripts/add-test-ids.js
+          cp /tmp/base-scripts/scripts/normalize.js             scripts/normalize.js
+          cp /tmp/base-scripts/scripts/load-remotes.js          scripts/load-remotes.js
+          cp /tmp/base-scripts/scripts/utils/generateTestIds.js scripts/utils/generateTestIds.js
+          cp /tmp/base-scripts/scripts/utils/jsonfiles.js       scripts/utils/jsonfiles.js
+
+      # --------------------------------------------------
+      # 5. Setup Node.js
+      # --------------------------------------------------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 18
 
       # --------------------------------------------------
-      # 5️⃣ Install dependencies (if needed)
+      # 6. Install dependencies
       # --------------------------------------------------
-      - run: npm ci
-        if: hashFiles('package-lock.json') != ''
+      - name: Install dependencies
+        run: npm ci
 
       # --------------------------------------------------
-      # 6️⃣ Fetch list of files changed in PR
+      # 7. Fetch changed files from the PR
       # --------------------------------------------------
-      - name: Get PR changed files
+      - name: Get changed test files
+        id: changed
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           curl -s \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
-            "${{ github.event.pull_request.url }}/files" \
-            > pr-files.json
+            "${{ github.event.pull_request.url }}/files?per_page=100" \
+            | jq -r '.[].filename' \
+            > changed-files.txt
+
+          echo "Changed files:"
+          cat changed-files.txt
+
+          # Extract which draft folders are affected (e.g. draft7, draft2020-12)
+          grep -E '^tests/(draft[^/]+)/.*\.json$' changed-files.txt \
+            | sed -E 's|^tests/([^/]+)/.*|\1|' \
+            | sort -u \
+            > affected-drafts.txt
+
+          echo "Affected drafts:"
+          cat affected-drafts.txt
 
       # --------------------------------------------------
-      # 7️⃣ Run TRUSTED base script on PR files
+      # 8. Run add-test-ids.js per affected dialect + file
+      #    CLI: node add-test-ids.js <dialect> [file-path]
       # --------------------------------------------------
       - name: Apply missing test IDs
         run: |
-          node /tmp/base-scripts/add-test-ids.js pr-files.json
+          if [ ! -s affected-drafts.txt ]; then
+            echo "No test JSON files changed — nothing to do."
+            exit 0
+          fi
+
+          while IFS= read -r draft; do
+            echo "Processing dialect: $draft"
+            grep -E "^tests/${draft}/.*\.json$" changed-files.txt | while IFS= read -r file; do
+              if [ -f "$file" ]; then
+                echo "  → $file"
+                node scripts/add-test-ids.js "$draft" "$file"
+              fi
+            done
+          done < affected-drafts.txt
 
       # --------------------------------------------------
-      # 8️⃣ Commit & push back to PR branch
+      # 9. Commit and push back to the PR branch
       # --------------------------------------------------
       - name: Commit and push changes
         run: |
-          git config user.name "test-id-bot"
+          git config user.name  "test-id-bot"
           git config user.email "test-id-bot@users.noreply.github.com"
 
-          git status
-          git add .
-          git commit -m "chore: auto-add missing test IDs" || echo "No changes to commit"
-          git push
+          git add 'tests/**/*.json'
+
+          if git diff --cached --quiet; then
+            echo "✅ No test ID changes needed — nothing to commit."
+          else
+            git commit -m "chore: auto-add missing test IDs"
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
+            echo "✅ Pushed test ID updates to PR branch."
+          fi
