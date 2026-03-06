@@ -2,12 +2,7 @@ import * as Schema from "@hyperjump/browser";
 import * as Pact from "@hyperjump/pact";
 import * as JsonPointer from "@hyperjump/json-pointer";
 import { toAbsoluteIri } from "@hyperjump/uri";
-import { registerSchema, unregisterSchema } from "@hyperjump/json-schema/draft-2020-12";
-import { getSchema, getKeywordId } from "@hyperjump/json-schema/experimental";
-import "@hyperjump/json-schema/draft-2019-09";
-import "@hyperjump/json-schema/draft-07";
-import "@hyperjump/json-schema/draft-06";
-import "@hyperjump/json-schema/draft-04";
+
 
 
 const sanitizeTopLevelId = (schema) => {

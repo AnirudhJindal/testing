@@ -1,0 +1,14 @@
+[
+  {
+    "description": "my test case",
+    "schema": { "type": "string" },
+    "tests": [
+      {
+        "description": "valid string",
+        "data": "hello",
+        "valid": true,
+        "id": "bfa1ee38bf36ccdb8e75abaf26395180"
+      }
+    ]
+  }
+]
