@@ -8,12 +8,14 @@
             {
                 "description": "allowed",
                 "data": "foo",
-                "valid": true
+                "valid": true,
+                "id": "753632e46a1414ad6201716ee72bcb22"
             },
             {
                 "description": "disallowed",
                 "data": 1,
-                "valid": false
+                "valid": false,
+                "id": "62125eff8a05989652bec7f622f129ab"
             }
         ]
     },
