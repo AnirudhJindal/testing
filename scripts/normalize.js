@@ -2,8 +2,6 @@ import * as Schema from "@hyperjump/browser";
 import * as Pact from "@hyperjump/pact";
 import * as JsonPointer from "@hyperjump/json-pointer";
 import { toAbsoluteIri } from "@hyperjump/uri";
-import { registerSchema, unregisterSchema } from "@hyperjump/json-schema/draft-2020-12";
-import { getSchema, getKeywordId } from "@hyperjump/json-schema/experimental";
 
 
 
